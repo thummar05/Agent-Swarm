@@ -1,0 +1,17 @@
+langchain
+langchain-core
+langchain-google-genai
+langchain-community
+langgraph
+python-dotenv
+langdetect
+requests
+beautifulsoup4
+faiss-cpu
+duckduckgo-search
+fastapi
+uvicorn[standard]
+streamlit
+httpx[http2]
+pydantic
+pytest

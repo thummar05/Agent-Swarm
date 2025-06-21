@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InfinityPay AI Assistant</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .chat-container {
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 700px;
+            position: relative;
+        }
+        .chat-header {
+            background-color: #4f46e5;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .message-bubble {
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 20px;
+            word-wrap: break-word;
+            line-height: 1.5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+        .user-message {
+            background-color: #e0e7ff;
+            align-self: flex-end;
+            color: #1f2937;
+            border-bottom-right-radius: 5px;
+        }
+        .agent-message {
+            background-color: #ffffff;
+            align-self: flex-start;
+            color: #1f2937;
+            border: 1px solid #e5e7eb;
+            border-bottom-left-radius: 5px;
+        }
+        .chat-input-area {
+            padding: 20px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: #f9fafb;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+        }
+        .chat-input {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            outline: none;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        .chat-input:focus {
+            border-color: #4f46e5;
+        }
+        .send-button {
+            background-color: #4f46e5;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+        }
+        .send-button:hover {
+            background-color: #4338ca;
+            transform: translateY(-1px);
+        }
+        .send-button:active {
+            transform: translateY(0);
+        }
+        .send-button:disabled {
+            background-color: #a5b4fc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .details-section {
+            margin-top: 10px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.85rem;
+            color: #4b5563;
+            border: 1px solid #e2e8f0;
+        }
+        .source-response {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: #1f2937;
+        }
+        .workflow-details {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: #1f2937;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .workflow-details strong {
+            color: #1f2937;
+        }
+        .section-header {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 15px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        .loading-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .user-id-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .user-id-label {
+            font-weight: 600;
+            color: #374151;
+        }
+        .user-id-input {
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            width: 150px;
+        }
+
+        @media (max-width: 640px) {
+            .chat-container {
+                min-height: 90vh;
+                margin: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .chat-header {
+                border-radius: 0;
+            }
+            .chat-input-area {
+                border-radius: 0;
+            }
+            .message-bubble {
+                max-width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            InfinityPay AI Assistant
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="agent-message message-bubble">
+                Hi there! I'm your InfinityPay AI Assistant. How can I help you today?
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <div class="user-id-input-group">
+                <label for="userId" class="user-id-label">User ID:</label>
+                <input type="text" id="userId" value="user123" class="user-id-input" placeholder="e.g., user123">
+            </div>
+            <textarea id="user-message" class="chat-input" placeholder="Type your message..." rows="3"></textarea>
+            <button id="send-button" class="send-button">Send</button>
+        </div>
+
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const userMessageInput = document.getElementById('user-message');
+        const userIdInput = document.getElementById('userId');
+        const sendButton = document.getElementById('send-button');
+        const loadingOverlay = document.getElementById('loading-overlay');
+
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addMessage(text, sender, sourceResponse = null, workflow = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message-bubble');
+
+            if (sender === 'user') {
+                messageDiv.classList.add('user-message');
+                messageDiv.innerHTML = text.replace(/\n/g, '<br>');
+            } else if (sender === 'agent') {
+                messageDiv.classList.add('agent-message');
+                messageDiv.innerHTML = text.replace(/\n/g, '<br>');
+            }
+
+            chatMessages.appendChild(messageDiv);
+
+            // Add workflow section if available
+            if (workflow && Array.isArray(workflow) && workflow.length > 0 && sender === 'agent') {
+                const workflowContainer = document.createElement('div');
+                workflowContainer.classList.add('details-section');
+                
+                const workflowDiv = document.createElement('div');
+                workflowDiv.classList.add('workflow-details');
+                
+                let workflowHtml = '<strong>Agent Execution Flow:</strong><br><br>';
+                workflow.forEach((step, index) => {
+                    if (step.agent_name) {
+                        workflowHtml += `<strong>${index + 1}. ${step.agent_name}:</strong><br>`;
+                        
+                        if (step.tool_calls && typeof step.tool_calls === 'object') {
+                            for (const [toolName, toolOutput] of Object.entries(step.tool_calls)) {
+                                workflowHtml += `&nbsp;&nbsp;• <em>${toolName}:</em> ${String(toolOutput)}<br>`;
+                            }
+                        }
+                        workflowHtml += '<br>';
+                    }
+                });
+                
+                workflowDiv.innerHTML = workflowHtml;
+                
+                const workflowHeader = document.createElement('div');
+                workflowHeader.classList.add('section-header');
+                workflowHeader.textContent = 'Workflow Details';
+                
+                workflowContainer.appendChild(workflowHeader);
+                workflowContainer.appendChild(workflowDiv);
+                chatMessages.appendChild(workflowContainer);
+            }
+
+            scrollToBottom();
+        }
+
+        async function sendMessage() {
+            const message = userMessageInput.value.trim();
+            const userId = userIdInput.value.trim();
+
+            if (!message) {
+                alert('Please enter a message.');
+                return;
+            }
+            if (!userId) {
+                alert('Please enter a User ID.');
+                return;
+            }
+
+            addMessage(message, 'user');
+            userMessageInput.value = '';
+
+            sendButton.disabled = true;
+            loadingOverlay.classList.add('visible');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/process_query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message, user_id: userId }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Received data:', data);
+
+                // Display agent response with all three fields
+                addMessage(
+                    data.response || 'No response received', 
+                    'agent', 
+                    data.source_agent_response || null,
+                    data.agent_workflow || null
+                );
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage(`Oops! Something went wrong: ${error.message}. Please try again.`, 'agent');
+            } finally {
+                sendButton.disabled = false;
+                loadingOverlay.classList.remove('visible');
+                scrollToBottom();
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+
+        userMessageInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        scrollToBottom();
+    </script>
+</body>
+</html>
