@@ -14,4 +14,4 @@ uvicorn[standard]
 streamlit
 httpx[http2]
 pydantic
-pytest
+gunicorn
