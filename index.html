@@ -252,7 +252,7 @@
         const sendButton = document.getElementById('send-button');
         const loadingOverlay = document.getElementById('loading-overlay');
 
-        const API_BASE_URL = 'http://127.0.0.1:8000';
+        const API_BASE_URL = 'https://agent-swarm-aniv.onrender.com';
 
         function scrollToBottom() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -271,6 +271,24 @@
             }
 
             chatMessages.appendChild(messageDiv);
+
+            // Add source response section if available
+            if (sourceResponse && sender === 'agent') {
+                const detailsDiv = document.createElement('div');
+                detailsDiv.classList.add('details-section');
+                
+                const sourceDiv = document.createElement('div');
+                sourceDiv.classList.add('source-response');
+                sourceDiv.innerHTML = `<strong>Original Agent Response:</strong><br>${sourceResponse.replace(/\n/g, '<br>')}`;
+                
+                const sourceHeader = document.createElement('div');
+                sourceHeader.classList.add('section-header');
+                sourceHeader.textContent = 'Source Response';
+                
+                detailsDiv.appendChild(sourceHeader);
+                detailsDiv.appendChild(sourceDiv);
+                chatMessages.appendChild(detailsDiv);
+            }
 
             // Add workflow section if available
             if (workflow && Array.isArray(workflow) && workflow.length > 0 && sender === 'agent') {
