@@ -30,7 +30,7 @@ This document describes the test cases for both unit tests and the complete work
     ```json
     {
         "tool_name": "create_support_ticket",
-        "Response": "Our support team will contact you soon regarding your question: “I'm not able to login my account.” (user: client788)."
+        "Response": "Our support team will contact you soon regarding your question: “I'm not able to login into my account.” (user: client789)."
     }
     ```
 - **Email Received**:
