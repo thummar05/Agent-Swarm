@@ -317,3 +317,7 @@ async def process_query_endpoint(request: QueryRequest):
         import traceback
         traceback.print_exc() # Print full traceback for debugging
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    
+@app.get("/ping")
+def ping():
+    return {"status": "alive"}
