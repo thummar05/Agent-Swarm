@@ -64,9 +64,9 @@ The Knowledge Agent leverages a Retrieval-Augmented Generation (RAG) pipeline to
 #### **How the RAG Pipeline Works**:
 1. **Scraping Content**: The agent scrapes content from the specified InfinitePay website pages, extracting relevant sections such as headings, paragraphs, and lists.
 2. **Text Chunking**: The scraped content is divided into smaller chunks of 500 words. This allows the information to be processed more efficiently and indexed for faster search results.
-3. **Vectorization**: The text chunks are converted into vectors using a **HuggingFace** embeddings model (`paraphrase-multilingual-MiniLM-L12-v2`), which is used for similarity search. These vectors are stored in a **FAISS** vector database for quick retrieval.
+3. **Vectorization**: The text chunks are converted into vectors using a **Google** embeddings model, which is used for similarity search. These vectors are stored in a **FAISS** vector database for quick retrieval.
 4. **Similarity Search**: When a user submits a query, the system performs a similarity search on the vector database. It retrieves the top 3 matching documents based on their relevance to the query.
-5. **Response Generation**: If relevant documents are found, they are passed to the **gemini-1.5-flash model** for response generation. If no relevant data is found in the knowledge base, the agent will use the **DuckDuckGo** search tool to search the web for relevant answers.
+5. **Response Generation**: If relevant documents are found, they are passed to the **gemini-1.5-flash model** for response generation. If no relevant data is found in the knowledge base, the agent will use the **DuckDuckGo** search tool to search the web for relevant answers.**It is only for banking and finance related queries.**
 6. **Fallback**: If the similarity search fails to find relevant data, the system defaults to using the DuckDuckGo search tool to provide the most relevant information from external sources.
 
 This process ensures that the **Knowledge Agent** provides accurate and contextually relevant responses to user queries, backed by the most up-to-date information from InfinitePay's website and the web.
@@ -87,9 +87,12 @@ This process ensures that the **Knowledge Agent** provides accurate and contextu
 ### 4. **Custom Agent**
 - **Role**: Handles general-purpose queries, like account's transactions and balaces etc.
 
+#### Tools:
+- **get_account_balance** to access user account balance.
+- **get_recent_transactions** to see the user's past 5 transactions.
+
 ### 5. **slack tool**:
 - **Slack Notification Tool** for suspicious queries.
-- **News Tool** to fetch articles based on a city or topic.
 
 ### 6. **Personality Layer**
 - **Role**: Rewrites responses in a more natural, friendly, and empathetic tone to enhance user experience.
