@@ -148,8 +148,8 @@ def map_to_slack_agent_state(overall_state: OverallAgentState) -> SlackAgentStat
         session_user_id=overall_state["session_user_id"],
         current_query=overall_state["current_query"],
         language=overall_state["language"],
-        validation_passed=True,  # Default value
-        slack_notification_sent=False,  # Default value
+        validation_passed=True,  
+        slack_notification_sent=False,  
         actual_tool_outputs={}
     )
 
