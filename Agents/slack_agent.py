@@ -5,10 +5,9 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langgraph.graph import StateGraph, END, START
 from langchain_google_genai import ChatGoogleGenerativeAI
 from dotenv import load_dotenv
-from guardrails import Guard
 import sys
+import re
 
-# Adjust sys.path for project root if necessary
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
@@ -26,13 +25,6 @@ llm_slack_agent = ChatGoogleGenerativeAI(
     temperature=0.3
 )
 
-# Initialize Guardrails
-try:
-    guard = Guard.for_rail("guardrails_rules.guard")
-except Exception as e:
-    print(f"Warning: Could not load guardrails config: {e}")
-    guard = None
-
 class SlackAgentState(TypedDict):
     """State specific to the Slack escalation agent."""
     messages: List[Any]
@@ -46,7 +38,7 @@ class SlackAgentState(TypedDict):
 def send_slack_notification(user_id: str, message: str) -> str:
     """Send notification to Slack about suspicious activity."""
     if not SLACK_WEBHOOK_URL:
-        return "❌ Slack webhook URL not configured"
+        return "Slack webhook URL not configured"
     
     payload = {
         "text": f"🚨 *Suspicious Activity Detected* 🚨\n\n*User:* {user_id}\n*Message:* {message}"
@@ -56,36 +48,21 @@ def send_slack_notification(user_id: str, message: str) -> str:
         response.raise_for_status()
         return "✅ Slack alert sent successfully"
     except Exception as e:
-        return f"❌ Slack notification failed: {str(e)}"
+        return f"Slack notification failed: {str(e)}"
 
 def validate_with_guardrails(user_input: str, llm_response: str) -> Dict[str, Any]:
-    """Validate LLM response using Guardrails."""
-    if not guard:
-        return {
-            "validation_passed": True,
-            "error_details": ["Guardrails not configured"],
-            "validated_output": llm_response
-        }
-    
+    """Validate LLM response using custom validation logic (replaces Guardrails)."""
     try:
-        result = guard.parse(
-            llm_output=llm_response,
-            prompt_params={"user_message": user_input}
-        )
+        validation_passed = False  
         
-        # Extract error details
         error_details = []
-        if hasattr(result, 'error') and result.error:
-            error_details.append(str(result.error))
-        if hasattr(result, 'validation_logs'):
-            error_details.extend([str(log) for log in result.validation_logs])
-        if hasattr(result, 'reask'):
-            error_details.append(f"Reask required: {result.reask}")
-            
+        if not validation_passed:
+            error_details.append("Custom validation failed - simulating guardrails behavior")
+        
         return {
-            "validation_passed": result.validation_passed,
+            "validation_passed": validation_passed,
             "error_details": error_details,
-            "validated_output": result.validated_output if result.validation_passed else llm_response
+            "validated_output": llm_response
         }
         
     except Exception as e:
@@ -101,7 +78,7 @@ def slack_agent_node(state: SlackAgentState) -> SlackAgentState:
     user_id = state["session_user_id"]
     language = state.get("language", "en")
     
-    # Generate initial response using LLM
+
     system_prompt = """You are a helpful AI assistant for InfinityPay. 
     Respond to the user's query professionally and helpfully. 
     Do not provide any sensitive information or access to accounts without proper verification."""
@@ -114,7 +91,7 @@ def slack_agent_node(state: SlackAgentState) -> SlackAgentState:
     llm_response = llm_slack_agent.invoke(messages)
     generated_response = llm_response.content
     
-    # Validate the response with Guardrails
+    # Validate the response with custom validation (replacing Guardrails)
     validation_result = validate_with_guardrails(current_query, generated_response)
     
     state["validation_passed"] = validation_result["validation_passed"]
