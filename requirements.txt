@@ -18,4 +18,5 @@ gunicorn
 guardrails-ai
 requests 
 python-dotenv
-openai==0.27.8
+griffe==0.37.0
+guardrails==0.3.3
