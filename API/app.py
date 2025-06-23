@@ -20,9 +20,15 @@ from Agents.knowledge_agent import (
     setup_knowledge_base,  
     map_to_knowledge_agent_state
 )
+from Agents.slack_agent import (
+    build_slack_agent_graph,
+    map_to_slack_agent_state
+)
+
 from Agents.router_agent import build_router_graph, route_agent 
 from Agents.personality_agent import build_personality_graph, map_to_personality_state
 from Agents.custom_agent import build_custom_agent_graph, map_to_custom_agent_state
+from Agents.slack_agent import send_slack_notification
 from utils.lang_detect import detect_language 
 
 # Global instances of compiled sub-graphs
@@ -31,6 +37,7 @@ knowledge_app = None
 router_app = None
 personality_app = None
 custom_agent_app = None
+slack_agent_app = None
 global_vectorstore = None # This will now remain None until first use by KnowledgeAgent
 overall_app = None # The main LangGraph application
 
@@ -39,13 +46,14 @@ overall_app = None # The main LangGraph application
 async def lifespan(app: FastAPI):
     """Initializes agents on startup and cleans up on shutdown."""
     print("Initializing all agents for FastAPI. Please wait...")
-    global customer_support_app, knowledge_app, router_app, personality_app, custom_agent_app, global_vectorstore, overall_app
+    global customer_support_app, knowledge_app, router_app,slack_agent_app, personality_app, custom_agent_app, global_vectorstore, overall_app
 
     # Build sub-graphs
     customer_support_app = build_customer_support_graph()
     knowledge_app = build_rag_agent() 
     custom_agent_app = build_custom_agent_graph()
     router_app = build_router_graph()
+    slack_agent_app = build_slack_agent_graph()
     personality_app = build_personality_graph()
 
     # Build the overall system graph
@@ -192,6 +200,28 @@ def call_custom_agent_executor(state: OverallAgentState) -> OverallAgentState:
     state["workflow_trace"].append({"agent_name": "CustomAgent", "tool_calls": tool_calls_dict})
     return state
 
+def call_slack_agent_executor(state: OverallAgentState) -> OverallAgentState:
+    print("\n--- Calling Slack Agent for Suspicious Query ---")
+    slack_input_state = map_to_slack_agent_state(state)
+    slack_result = slack_agent_app.invoke(slack_input_state)
+
+    # Append valid messages from sub-agent result to overall state messages
+    state["messages"].extend([msg for msg in slack_result["messages"] if isinstance(msg, BaseMessage)])
+
+    state["tools_used"].extend(slack_result.get("tools_used", []))
+    last_slack_message = next((msg.content for msg in reversed(slack_result["messages"]) if isinstance(msg, AIMessage)), "")
+    state["raw_agent_output"] = last_slack_message
+
+    # Extract tool calls and their outputs for workflow trace
+    tool_calls_dict = _extract_tool_calls_from_langgraph_result(slack_result["messages"])
+    state["workflow_trace"].append({"agent_name": "SlackAgent", "tool_calls": tool_calls_dict})
+
+    # Send notification to Slack channel if needed
+    if slack_result.get("send_notification", False):
+        send_slack_notification(state["session_user_id"], last_slack_message)
+
+    return state
+
 def call_personality_layer_executor(state: OverallAgentState) -> OverallAgentState:
     print("\n--- Applying Personality Layer ---")
     personality_input_state = map_to_personality_state(state)
@@ -220,6 +250,7 @@ def build_overall_system_graph() -> StateGraph:
     workflow.add_node("customer_support_executor", call_customer_support_executor)
     workflow.add_node("knowledge_agent_executor", call_knowledge_agent_executor)
     workflow.add_node("custom_agent_executor", call_custom_agent_executor)
+    workflow.add_node("slack_agent_executor", call_slack_agent_executor)  
     workflow.add_node("personality_layer", call_personality_layer_executor)
 
     # Set the entry point of the overall graph
@@ -233,6 +264,7 @@ def build_overall_system_graph() -> StateGraph:
             "customer_support": "customer_support_executor",
             "knowledge_agent": "knowledge_agent_executor",
             "custom_agent": "custom_agent_executor",
+            "slack_agent": "slack_agent_executor",  
             "default": "personality_layer" # Fallback if no specific agent is chosen
         }
     )
@@ -241,6 +273,7 @@ def build_overall_system_graph() -> StateGraph:
     workflow.add_edge("customer_support_executor", "personality_layer")
     workflow.add_edge("knowledge_agent_executor", "personality_layer")
     workflow.add_edge("custom_agent_executor", "personality_layer")
+    workflow.add_edge("slack_agent_executor", "personality_layer")
 
     # Define the final edge from the personality layer to the end of the graph
     workflow.add_edge("personality_layer", END)

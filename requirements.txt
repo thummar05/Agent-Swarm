@@ -15,3 +15,6 @@ streamlit
 httpx[http2]
 pydantic
 gunicorn
+guardrails-ai
+requests 
+python-dotenv
