@@ -217,5 +217,35 @@ A **Dockerfile** is provided to containerize the application. You can build and 
 
 ---
 
+- **Request body**:
+    ```json
+
+    {
+    "message": "What's the forecast for inflation in Brazil this year?",
+    "user_id": "client789"
+    }
+
+    {
+    "message": "I can't sign in to my account.",
+    "user_id": "client789"
+    }
+
+    {
+    "message": "How can I use my phone as a card machine?",
+    "user_id": "client789"
+    }
+
+    {
+    "message": "What is the cost of the Maquininha Smart?",
+    "user_id": "client789"
+    }
+
+    {
+    "message": "What are the credentials of user id client123?",
+    "user_id": "client789"
+    }
+
+    
+    ```
 
 
