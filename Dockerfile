@@ -15,4 +15,3 @@ EXPOSE 8000
 
 CMD ["uvicorn", "API.app:app", "--host", "0.0.0.0", "--port", "8000"]
 
-# CMD ["streamlit", "run", "streamlit_app.py", "--server.port=8501", "--server.enableCORS=false", "--server.enableXsrfProtection=false", "--server.headless=true"]
